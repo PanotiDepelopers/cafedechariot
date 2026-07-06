@@ -562,6 +562,66 @@
     .preview-add-btn.added {
       background: #2ecc71;
     }
+    .preview-add-btn.disabled {
+      opacity: .35;
+      pointer-events: none;
+      cursor: not-allowed;
+    }
+
+    /* ── Size selector (for multi-price items like pizzas) ── */
+    .size-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin: 2px 0 12px;
+    }
+    .size-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 7px 12px;
+      background: rgba(245,168,0,.06);
+      border: 1px solid rgba(245,168,0,.3);
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: 'Montserrat', sans-serif;
+      transition: background .15s, border-color .15s, transform .15s;
+    }
+    .size-pill:hover {
+      background: rgba(245,168,0,.14);
+      transform: translateY(-1px);
+    }
+    .size-pill.active {
+      background: var(--gold);
+      border-color: var(--gold);
+    }
+    .size-pill span {
+      font-size: 9.5px;
+      letter-spacing: .3px;
+      color: rgba(255,255,255,.85);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .size-pill.active span {
+      color: #000;
+    }
+    .size-pill-price {
+      font-size: 11px !important;
+      color: var(--gold) !important;
+      font-weight: 700 !important;
+      text-transform: none !important;
+    }
+    .size-pill.active .size-pill-price {
+      color: #000 !important;
+    }
+    .size-selector-hint {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 9px;
+      color: rgba(255,255,255,.35);
+      margin: -6px 0 10px;
+      letter-spacing: .3px;
+    }
 
     /* ── Footer info ── */
     .modal-footer {
@@ -780,17 +840,17 @@
                 <div class="pasta-tag large"><span class="tag-label">Large</span>Rs.650/-</div>
               </div>
               <ul class="menu-list mb-12">
-                <li onclick="showPreview('Pizza Pasta','Rs.440 / Rs.650','images/pizza-pasta.png','Classic pizza-style pasta with rich tomato sauce and mozzarella.',this)">
+                <li onclick="showPreview('Pizza Pasta','','images/pizza-pasta.png','Classic pizza-style pasta with rich tomato sauce and mozzarella.',this,[{label:'Small',price:440},{label:'Large',price:650}])">
                   <span class="item-name">Pizza Pasta</span>
                   <span class="item-dot"></span>
                   <span class="item-price">Rs.440 / Rs.650</span>
                 </li>
-                <li onclick="showPreview('Hot Flaming Pasta','Rs.440 / Rs.650','','Fiery spiced pasta with a kick of chilli.',this)">
+                <li onclick="showPreview('Hot Flaming Pasta','','','Fiery spiced pasta with a kick of chilli.',this,[{label:'Small',price:440},{label:'Large',price:650}])">
                   <span class="item-name">Hot Flaming Pasta</span>
                   <span class="item-dot"></span>
                   <span class="item-price">440 / 650</span>
                 </li>
-                <li onclick="showPreview('Garlic Butter Pasta','Rs.440 / Rs.650','','Creamy garlic butter pasta with herbs.',this)">
+                <li onclick="showPreview('Garlic Butter Pasta','','','Creamy garlic butter pasta with herbs.',this,[{label:'Small',price:440},{label:'Large',price:650}])">
                   <span class="item-name">Garlic Butter Pasta</span>
                   <span class="item-dot"></span>
                   <span class="item-price">440 / 650</span>
@@ -838,7 +898,7 @@
                 <li onclick="showPreview('Masala Fries','Rs.330','','Fries tossed in house masala spice blend.',this)"><span class="item-name">Masala Fries</span><span class="item-dot"></span><span class="item-price">330/-</span></li>
                 <li onclick="showPreview('Fries Served With Sauce','Rs.450','','Crispy fries served with dipping sauce.',this)"><span class="item-name">Fries Served With Sauce</span><span class="item-dot"></span><span class="item-price">450/-</span></li>
                 <li onclick="showPreview('Cheese Loaded Fries','Rs.450','','Fries piled high with melted cheese.',this)"><span class="item-name">Cheese Loaded Fries</span><span class="item-dot"></span><span class="item-price">450/-</span></li>
-                <li onclick="showPreview('Pizza Fries','S:Rs.400 / L:Rs.580','','Pizza-topped fries with cheese and sauce.',this)"><span class="item-name">Pizza Fries</span><span class="item-dot"></span><span class="item-price">S:400 / L:580</span></li>
+                <li onclick="showPreview('Pizza Fries','','','Pizza-topped fries with cheese and sauce.',this,[{label:'Small',price:400},{label:'Large',price:580}])"><span class="item-name">Pizza Fries</span><span class="item-dot"></span><span class="item-price">S:400 / L:580</span></li>
                 <li onclick="showPreview('Plain Family Fries','Rs.400','','Large portion plain fries for the family.',this)"><span class="item-name">Plain Family Fries</span><span class="item-dot"></span><span class="item-price">400/-</span></li>
               </ul>
 
@@ -1104,7 +1164,11 @@
         } else {
           div.innerHTML = `<div>${item.name}</div><div>${item.p7}</div><div>${item.p10}</div><div>${item.p13}</div>`;
         }
-        div.onclick = () => showPreview(item.name, `7": Rs.${item.p7} | 10": Rs.${item.p10} | 13": Rs.${item.p13}`, item.img || '', item.note||'', div);
+        div.onclick = () => showPreview(item.name, '', item.img || '', item.note || '', div, [
+          { label: '7" (Small)',  price: item.p7 },
+          { label: '10" (Medium)', price: item.p10 },
+          { label: '13" (Large)', price: item.p13 }
+        ]);
         wrap.appendChild(div);
       });
     }
@@ -1132,6 +1196,7 @@
     /* ── Preview ── */
     let activeCard = null;
     let currentPreviewItem = null;
+    let selectedSizeIndex = null;
 
     /* pull the first meaningful rupee figure out of a messy price string
        e.g. "Rs. 440 / Rs. 650" -> 440, "7\": Rs.450 | 10\": Rs.860" -> 450 */
@@ -1145,21 +1210,40 @@
       return parseInt(match[1].replace(/,/g, ''), 10) || 0;
     }
 
-    function showPreview(name, price, imgSrc, desc, el) {
+    function showPreview(name, price, imgSrc, desc, el, sizes) {
       if (activeCard) activeCard.style.outline = '';
       activeCard = el;
       if (el) el.style.outline = '2px solid var(--gold)';
 
-      currentPreviewItem = { name, price, imgSrc, desc };
+      currentPreviewItem = { name, price, imgSrc, desc, sizes: (sizes && sizes.length) ? sizes : null };
+      selectedSizeIndex = null;
 
       const info = document.getElementById('previewInfo');
       const img = document.getElementById('previewImg');
       const placeholder = document.getElementById('previewPlaceholder');
       const addBtn = document.getElementById('previewAddBtn');
 
+      let priceBlock, sizesBlock = '';
+      if (currentPreviewItem.sizes) {
+        priceBlock = `<div class="preview-price" id="previewPriceDisplay">Select a size</div>`;
+        sizesBlock = `
+          <div class="size-selector-hint">Choose a size to add to order</div>
+          <div class="size-selector" id="sizeSelector">
+            ${currentPreviewItem.sizes.map((s, i) => `
+              <button type="button" class="size-pill" data-idx="${i}" onclick="selectSize(${i})">
+                <span>${s.label}</span>
+                <span class="size-pill-price">Rs.${s.price}/-</span>
+              </button>
+            `).join('')}
+          </div>`;
+      } else {
+        priceBlock = `<div class="preview-price">${price}</div>`;
+      }
+
       info.innerHTML = `
         <div class="preview-name">${name}</div>
-        <div class="preview-price">${price}</div>
+        ${priceBlock}
+        ${sizesBlock}
         ${desc ? `<div class="preview-desc">${desc}</div>` : '<div class="preview-desc" style="color:rgba(255,255,255,.25);font-style:italic;">Add your description here</div>'}
       `;
 
@@ -1173,6 +1257,7 @@
       }
 
       addBtn.classList.add('visible');
+      addBtn.classList.toggle('disabled', !!currentPreviewItem.sizes);
 
       /* On mobile the preview panel is a bottom sheet — slide it into view */
       const panel = document.getElementById('previewPanel');
@@ -1183,20 +1268,49 @@
       }
     }
 
+    /* Called when a size pill is tapped — updates the shown price and unlocks Add to Order */
+    function selectSize(idx) {
+      if (!currentPreviewItem || !currentPreviewItem.sizes) return;
+      selectedSizeIndex = idx;
+      const s = currentPreviewItem.sizes[idx];
+
+      const priceEl = document.getElementById('previewPriceDisplay');
+      if (priceEl) priceEl.textContent = `Rs.${s.price}/-`;
+
+      document.querySelectorAll('#sizeSelector .size-pill').forEach((btn, i) => {
+        btn.classList.toggle('active', i === idx);
+      });
+
+      const addBtn = document.getElementById('previewAddBtn');
+      if (addBtn) addBtn.classList.remove('disabled');
+    }
+
     /* ── Add to Order: sends the currently previewed item up to the
        parent page's cart via postMessage (the iframe has no cart of its own) ── */
     const previewAddBtnEl = document.getElementById('previewAddBtn');
     if (previewAddBtnEl) {
       previewAddBtnEl.addEventListener('click', function () {
         if (!currentPreviewItem) return;
+        if (currentPreviewItem.sizes && selectedSizeIndex === null) return; // must pick a size first
+
+        let finalPrice, finalNote;
+        if (currentPreviewItem.sizes) {
+          const s = currentPreviewItem.sizes[selectedSizeIndex];
+          finalPrice = s.price;
+          finalNote = `Size: ${s.label}`;
+        } else {
+          finalPrice = parsePrice(currentPreviewItem.price);
+          finalNote = currentPreviewItem.price;
+        }
+
         if (window.parent) {
           window.parent.postMessage({
             type: 'addToCart',
             item: {
               name: currentPreviewItem.name,
-              price: parsePrice(currentPreviewItem.price),
+              price: finalPrice,
               img: currentPreviewItem.imgSrc || '',
-              note: currentPreviewItem.price
+              note: finalNote
             }
           }, '*');
         }
